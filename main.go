@@ -7,14 +7,13 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"strconv"
 	"strings"
 )
 
 type Arguments map[string]string
 
 type Item struct {
-	Id    int    `json:"id"`
+	Id    string `json:"id"`
 	Email string `json:"email"`
 	Age   int    `json:"age"`
 }
@@ -50,7 +49,6 @@ func Add(args Arguments, writer io.Writer) error {
 	}
 	item := Item{}
 	json.Unmarshal([]byte(args["item"]), &item)
-	id, _ := strconv.Atoi(args["id"])
 	fileName := args["fileName"]
 
 	file, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE, 0755)
@@ -67,8 +65,11 @@ func Add(args Arguments, writer io.Writer) error {
 	json.Unmarshal(content, &data)
 	if len(data) > 0 {
 		for _, it := range data {
-			if it.Id == id {
-				fmt.Fprintf(writer, "Item with id %v already exists", id)
+			fmt.Println(it)
+			if it.Id == item.Id {
+
+				fmt.Fprintf(writer, "Item with id %v already exists", item.Id)
+				return nil
 			}
 		}
 	}
@@ -87,7 +88,7 @@ func Remove(args Arguments, writer io.Writer) error {
 	if args["id"] == "" {
 		return fmt.Errorf("-id flag has to be specified")
 	}
-	id, _ := strconv.Atoi(args["id"])
+	id, _ := args["id"]
 	fileName := args["fileName"]
 	file, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
@@ -114,6 +115,7 @@ func Remove(args Arguments, writer io.Writer) error {
 	}
 	if !found {
 		fmt.Fprintf(writer, "Item with id %v not found", id)
+		return nil
 	}
 
 	res, err := json.Marshal(data2)
@@ -131,7 +133,7 @@ func FindById(args Arguments, writer io.Writer) error {
 	if args["id"] == "" {
 		return fmt.Errorf("-id flag has to be specified")
 	}
-	id, _ := strconv.Atoi(args["id"])
+	id, _ := args["id"]
 	fileName := args["fileName"]
 	file, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
@@ -153,7 +155,7 @@ func FindById(args Arguments, writer io.Writer) error {
 			}
 		}
 	}
-	if found.Id > 0 {
+	if found.Id != "" {
 		res, _ := json.Marshal(found)
 		writer.Write([]byte(res))
 	} else {
@@ -202,10 +204,6 @@ func parseArgs() Arguments {
 	s := r.Replace(*item)
 	res := Item{}
 	json.Unmarshal([]byte(s), &res)
-
-	//if *id == "" && res.Id > 0 {
-	//	*id = strconv.Itoa(res.Id)
-	//}
 
 	args := Arguments{
 
